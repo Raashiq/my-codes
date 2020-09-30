@@ -1,0 +1,124 @@
+q=1256000; %joule per second
+m_hot= 13.89; %kg per second oil
+m_cold= 37.56; %kg per second water
+Tci= 308 ; %cold water inlet temp
+Tco= 316; %cold water outlet temp
+Thi= 363; %hot oil inlet temp
+Tho= 318; %hot oil outlet temp
+T_LMTD=23.9216 ; %LMTD
+Rho_oil=907.5; %density of oil(average density)
+Rho_water=992.63; %density of cooling water
+vis_oil=0.0195; %avrg dynamic viscosity of oil
+vis_water=0.000668; %avrg dynamic viscosity of water
+Cp_oil=2010; %avrg specific heat of oil
+Cp_water= 4178.15; %avrg specific heat of water
+k_water=.626; %conductivity of water at 39 degrees
+k_oil= 0.12; %conductivity of oil
+pressure_drop= 68947.6; %we took 80% less pressure drop then given to make
+up for elbow loss later
+foul_oil= 0.000516; %w/m^2.k
+foul_water= 0.000344; %w/m^2.k
+vis_rise_per_kelvin_drop_oil=.00042; %viscosity increase per kelvin drop in
+oil;
+di=input('please enter the inside diameter of the tube in meter: ');
+do=input('please enter the outside diameter of the tube meter: ');
+Di=input('please enter the inside diameter of the annular flow: ');
+n=input('no of pass : ');
+pr_water=4.47; %at 39 degree celcius
+Ai=(pi/4)*(di^2); %inside pipe
+Vi=(m_cold)/(Ai*Rho_water); % velocity inside pipe
+disp('velocity inside the flow area is: ');
+disp(Vi);
+Re_water=(Vi*di*Rho_water)/(vis_water); %Reynolds number of water
+disp('reynalds number of water:');
+disp(Re_water);
+Nu_water=(.023)*((Re_water)^.8)*((pr_water)^.33); %Sieder Tate equation
+disp('Nusselt number of water is: ');
+disp(Nu_water);
+hi=(Nu_water*k_water)/di; %internal hi
+disp('the value of hi is ');
+disp(hi);
+%CALCULATING ho
+De=(((Di^2)-(do^2))/(do)); %equivalent diameter at annulus
+disp('equivalent dia of annulus: ');
+disp(De);
+Vo=(m_hot)/((pi/4)*((Di^2)-(do^2))*Rho_oil); %outlet velocity at annulus
+disp('velocity of oil: ');
+disp(Vo);
+Re_oil=(Vo*De*Rho_oil)/(vis_oil); %Reynolds number for oil at annulus
+disp('Re of oil: ');
+disp(Re_oil);
+pr_oil=((vis_oil*Cp_oil)/k_oil); %Prandtl number for oil at annulus
+disp('Prandol number of oil: ');
+disp(pr_oil);
+Nu_oil= .023*(Re_oil^.8)*(pr_oil^.33);
+disp('nusselt number of oil: ');
+disp(Nu_oil);
+ho=(Nu_oil*k_oil)/De;
+disp('the value of ho is: ');
+disp(ho);
+%Calculating the thickness resistance hio
+hio=(di/do)*hi;
+disp('value of hio: ');
+disp(hio);
+%Calculating ho with correction factor
+Th_avrg=(Tho+Thi)/2; %avrg temp of oil
+Tc_avrg=(Tci+Tco)/2; %avrg temp of water
+T_wall=((ho*Th_avrg)+(hio*Tc_avrg))/(ho+hio); %wall temperature calculation
+disp('wall temperature; ')
+disp(T_wall);
+vis_at_wall_oil=(vis_oil+(vis_rise_per_kelvin_drop_oil*(Th_avrg-T_wall)));
+%linear inter polation and finding viscosity at wall
+disp('vis at wall: ');
+disp(vis_at_wall_oil);
+correction_factor=(vis_oil)/(vis_at_wall_oil); %correction factor
+%calculating ho with correction factor
+Nu_oil=Nu_oil*(correction_factor)^.14; %corrected Nu number with correction
+factor
+ho=(Nu_oil*k_oil)/De;
+disp('the corrected ho is');
+disp(ho);
+%Calculating U total heat transfer coefficient;
+U=1/((1/hi)+(1/ho)+(1/hio)+foul_oil+foul_water);
+disp('total heat transfer coefficient');
+disp(U);
+As=q/(U*T_LMTD);
+disp('total flow area is: ');
+disp(As);
+L= As/(pi*do*n);
+disp('length of one pass: ');
+disp(L);
+%%CALCULATING THE PRESSURE DROP%%
+%Calculating pressure drop in pipe
+f_water= 1/(-1.8*log10((((.0000015/di)/3.7)^1.11)+(6.9/Re_water)))^2; %page
+361 fox and mc donald book modified colebrook equation
+disp('f in pipe; ');
+disp(f_water);
+Pressure_drop_pipe= n*f_water*(L/di)*(Rho_water*(Vi^2)/2);
+disp('pressure drop in pipe: ');
+disp(Pressure_drop_pipe);
+if Pressure_drop_pipe>pressure_drop
+ disp('pressure drop in pipe is too high');
+end
+%Calculating pressure drop at annulus
+Dh=Di-do;
+f_oil= 1/(-1.8*log10((((.00003/Dh)/3.7)^1.11)+(6.9/Re_oil)))^2;
+disp('f in annulus; ');
+disp(f_oil);
+Pressure_drop_annulus=
+n*f_oil*(L/Dh)*(Rho_oil*(Vo^2)/2)*(correction_factor)^(-.14);
+disp('pressure drop in annulus: ');
+disp(Pressure_drop_annulus);
+if Pressure_drop_annulus>pressure_drop
+ disp('pressure drop in annulus is too high according to normal
+equation');
+end
+Pressure_drop_annulus_class=n*((f_oil*(L/Dh)*(correction_factor)^(-
+.14))+.5)*.5*Rho_oil*(Vo^2);
+disp('pressure drop in annulus according to class: ');
+%calculating pressure drop according to class lecture
+disp(Pressure_drop_annulus_class);
+if Pressure_drop_annulus_class>pressure_drop
+ disp('pressure drop in annulus is too high according to the equation in
+class');
+end
